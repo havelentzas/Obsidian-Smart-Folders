@@ -25,6 +25,9 @@
 - **Where the page opens**: `openInRightSidebar` setting (default off = main area, replacing
   the current tab). On = right sidebar, reusing an existing sidebar folder page if present.
   Notes created from templates always open in the main area.
+- **Already open → focus it**: `focusExistingPage` (default on). Opening a folder whose page is
+  open in any tab (main, sidebar, popout) focuses that tab — from clicks, links, breadcrumbs,
+  hover. A Ctrl/Cmd-click's fresh empty tab is closed. Off = old behaviour.
 
 - **Folder properties use Obsidian's native properties editor** (private API, feature-checked,
   falls back to raw YAML). Property types are shared vault-wide with notes.
@@ -55,8 +58,17 @@
   `.trash/`; never a hard delete) after a confirmation listing the folders. Notes, folders,
   `[[Folder]]` links and plugin settings are left alone.
 
+- **Folder properties in suggestions** (setting `folderPropertySuggestions`, default on):
+  folder property names (with inferred types), string values and tags are merged into
+  Obsidian's own suggestion sources. Notes win: an existing property keeps its type. Side
+  effect, accepted: folder tags also show in the Tags view (clicking searches notes only), and
+  folder-only property names show in Bases / "All properties".
+- **Folder properties cache**: `FolderPropertiesIndex` (in memory), rebuilt on startup and on
+  window focus, updated on our own saves and folder rename/delete.
+- **Public API** (`plugin.api`, version 1, `docs/API.md`): facade returning copies; events via
+  `app.workspace.trigger` (`smart-folders:ready`, `smart-folders:properties-changed`). Additive
+  changes keep the version; breaking ones bump it. Only `api` is public — not the plugin's other members.
+- **Iconic integration**: explored, feasible via runtime patches (no fork) — not built yet.
+
 ## Open — ask the owner before deciding
 
-- **Folder properties in suggestions** *(parked — later exploration, don't build yet)*: Obsidian's autofill comes from the metadata cache, which only
-  knows notes. Property names/values used *only* on folders won't be suggested anywhere. Feed
-  them in (more private API), or accept?

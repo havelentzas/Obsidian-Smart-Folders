@@ -14,7 +14,7 @@
  * UI only: all .osf IO goes through OsfStore.
  */
 
-import { ItemView, Notice, TAbstractFile, TFolder, ViewStateResult, WorkspaceLeaf, setIcon } from "obsidian";
+import { Events, ItemView, Notice, TAbstractFile, TFolder, ViewStateResult, WorkspaceLeaf, setIcon } from "obsidian";
 import { FOLDER_PAGE_ICON, VIEW_TYPE_FOLDER_PAGE } from "../constants";
 import { FrontmatterParseError } from "../core/frontmatter";
 import { renamedPath } from "../core/folder-links";
@@ -44,6 +44,8 @@ export class FolderPageView extends ItemView {
 	private renderId = 0;
 	/** Native properties editor child component; replaced on every render. */
 	private propertiesEditor: NativePropertiesEditor | null = null;
+	/** Raw YAML mode: the textarea and the text last loaded/saved (to tell if the user has edits). */
+	private yamlInput: { el: HTMLTextAreaElement; saved: string } | null = null;
 	/** Header and Subfolders slots, redrawn on their own when the vault changes. */
 	private headerEl: HTMLElement | null = null;
 	private subfoldersEl: HTMLElement | null = null;
@@ -95,6 +97,13 @@ export class FolderPageView extends ItemView {
 		this.registerEvent(vault.on("rename", (file, oldPath) => this.onVaultRename(file, oldPath)));
 		this.registerEvent(vault.on("create", (file) => this.onChildChanged(file, file.path)));
 		this.registerEvent(vault.on("delete", (file) => this.onVaultDelete(file)));
+		// Properties changed elsewhere (API, another folder page, Finder edit picked up on focus).
+		this.registerEvent(
+			// Custom event: Workspace's typed overloads don't cover it, the base Events signature does.
+			(this.app.workspace as Events).on("smart-folders:properties-changed", (path: unknown, fm: unknown) => {
+				if (path === this.folderPath) void this.syncProperties(fm as FolderFrontmatter | null);
+			}),
+		);
 		await this.render();
 	}
 
@@ -155,6 +164,21 @@ export class FolderPageView extends ItemView {
 		if (templates) void this.refreshTemplates();
 	}
 
+	/** Show changed properties without a re-render; raw YAML with unsaved edits is left alone. */
+	private async syncProperties(fm: FolderFrontmatter | null): Promise<void> {
+		if (this.propertiesEditor) {
+			this.propertiesEditor.synchronize(fm ?? {});
+			return;
+		}
+		const input = this.yamlInput;
+		if (!input || input.el.value !== input.saved) return;
+		const text = await this.deps.store.readFrontmatterText(this.folderPath);
+		if (this.yamlInput === input && input.el.value === input.saved) {
+			input.el.value = text;
+			input.saved = text;
+		}
+	}
+
 	private redrawHeader(): void {
 		const slot = this.headerEl;
 		if (!slot) return;
@@ -183,6 +207,7 @@ export class FolderPageView extends ItemView {
 		this.templatesEl = null;
 		this.headerEl = null;
 		this.subfoldersEl = null;
+		this.yamlInput = null;
 		if (this.propertiesEditor) {
 			this.removeChild(this.propertiesEditor);
 			this.propertiesEditor = null;
@@ -297,6 +322,8 @@ export class FolderPageView extends ItemView {
 		textarea.placeholder = "status: active\ntags:\n  - project";
 		textarea.spellcheck = false;
 		textarea.value = await this.deps.store.readFrontmatterText(this.folderPath);
+		const input = { el: textarea, saved: textarea.value };
+		this.yamlInput = input;
 
 		const footer = slot.createDiv({ cls: "smart-folders-card-footer" });
 		const errorEl = footer.createDiv({ cls: "smart-folders-error" });
@@ -304,7 +331,14 @@ export class FolderPageView extends ItemView {
 		saveBtn.addEventListener("click", async () => {
 			errorEl.setText("");
 			try {
-				await this.deps.store.writeFrontmatterText(this.folderPath, textarea.value);
+				const previous = input.saved;
+				input.saved = textarea.value; // before the write: its change event must not reload the box
+				try {
+					await this.deps.store.writeFrontmatterText(this.folderPath, textarea.value);
+				} catch (err) {
+					input.saved = previous;
+					throw err;
+				}
 				new Notice("Folder properties saved");
 			} catch (err) {
 				if (err instanceof FrontmatterParseError) errorEl.setText(err.message);

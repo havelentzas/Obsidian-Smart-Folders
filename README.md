@@ -14,6 +14,11 @@ MyFolder/
 Click a folder in the File Explorer (or right-click → **Open folder page**) to open its
 page: edit properties, browse subfolders, see its templates.
 
+## For plugin developers
+
+Read and write folder properties, use folder templates and react to changes through the
+versioned API at `app.plugins.plugins["smart-folders"].api`. See [docs/API.md](docs/API.md).
+
 ## Development
 
 ```sh

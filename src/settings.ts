@@ -6,8 +6,12 @@ export interface SmartFoldersSettings {
 	openOnFolderClick: boolean;
 	/** Open the folder page in the right sidebar instead of the main (note) area. */
 	openInRightSidebar: boolean;
+	/** If a folder's page is already open in some tab, focus that tab instead of opening another. */
+	focusExistingPage: boolean;
 	/** Edit folder properties as raw YAML instead of with Obsidian's native properties editor. */
 	rawYamlProperties: boolean;
+	/** Folder property names, values and tags appear in Obsidian's suggestions (notes and folders). */
+	folderPropertySuggestions: boolean;
 	/** [[Folder name]] links: autocomplete, normal link styling, click opens the folder page, graph nodes. */
 	folderLinks: boolean;
 	/** Graph view "Folders" filter toggle (global graph / local graph), like the native Tags toggle. */
@@ -18,7 +22,9 @@ export interface SmartFoldersSettings {
 export const DEFAULT_SETTINGS: SmartFoldersSettings = {
 	openOnFolderClick: true,
 	openInRightSidebar: false,
+	focusExistingPage: true,
 	rawYamlProperties: false,
+	folderPropertySuggestions: true,
 	folderLinks: true,
 	graphShowFolders: false,
 	localGraphShowFolders: false,
@@ -57,6 +63,16 @@ export class SmartFoldersSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName("Focus an already open folder page")
+			.setDesc("If the folder's page is already open in a tab, switch to that tab instead of opening it again.")
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.focusExistingPage).onChange(async (value) => {
+					this.plugin.settings.focusExistingPage = value;
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
 			.setName("Edit folder properties as raw YAML")
 			.setDesc(
 				"Off: the same properties editor as notes (property types, tag and value autofill). On: a plain YAML text box.",
@@ -66,6 +82,19 @@ export class SmartFoldersSettingTab extends PluginSettingTab {
 					this.plugin.settings.rawYamlProperties = value;
 					await this.plugin.saveSettings();
 					this.plugin.refreshFolderPages();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName("Suggest folder properties")
+			.setDesc(
+				"Property names, values and tags used on folders are suggested everywhere notes' are " +
+					"(property editor, # tags, Tags view), even if no note uses them.",
+			)
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.folderPropertySuggestions).onChange(async (value) => {
+					this.plugin.settings.folderPropertySuggestions = value;
+					await this.plugin.saveSettings();
 				}),
 			);
 

@@ -44,13 +44,22 @@ Tick boxes in the same change that completes them. Each item should be a small, 
 - [x] Update folder links on folder rename/move (ask vs. auto per Obsidian's option)
 - [ ] Verify: rename `Rename me` with `Sample notes/Rename test.md` open; both option states; hover in LP + reading view
 
+## Tabs
+- [x] Focus an already open folder page instead of opening a duplicate (setting `focusExistingPage`)
+- [ ] Verify: explorer click, [[link]] click, Cmd-click (no empty tab left), sidebar mode, setting off
+
 ## Data removal
 - [x] Settings button "Remove all Smart Folders data": confirm with folder list, trash every `.osf/`
 - [ ] Verify in the test vault (then restore the seeded `.osf/` folders from the trash)
 
 ## M3 — Folder properties as data
-- [ ] Public API on the plugin instance (`getFolderFrontmatter(path)`) for other plugins / Dataview / Templater
-- [ ] In-memory cache of folder frontmatter, invalidated on save
+- [x] Public, versioned API `plugin.api` (properties read/write, templates, link resolution, open page, data paths) + workspace events `smart-folders:ready` / `smart-folders:properties-changed` — `docs/API.md`
+- [x] Folder page updates live when properties change elsewhere (API, Finder edit on refocus)
+- [ ] Verify from the dev console: `app.plugins.plugins['smart-folders'].api` read/write; open folder page updates
+- [x] In-memory cache of folder frontmatter, invalidated on save (+ rebuild on focus, rename/delete)
+- [x] Folder property names, values and tags in Obsidian's suggestions (setting `folderPropertySuggestions`)
+- [ ] Verify: `osf-client` and `#osf-folder-only` (only on Folder 1/Subfolder A) are suggested in a note's properties, `#` in the editor, Tags view; edit in Finder → appears after refocus
+- [ ] Iconic: folder rules can use folder properties (runtime patch of Iconic's RuleManager.judgeFile + rule editor source list; verified feasible against Iconic 1.1.10)
 
 ## Later / unsorted
 - [ ] Indicator in the File Explorer for folders that have `.osf/`

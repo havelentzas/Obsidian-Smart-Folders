@@ -42,8 +42,11 @@ Three things are being built, and nothing else:
    internal links" option (ask vs. silent), like note renames.
    Linked folders appear in the **Graph view** behind a **"Folders"** toggle in the graph's
    Filters panel (separate for global and local graph), like the native Tags toggle.
-4. **Folder properties are real data**, usable the way note properties are (later
-   milestones: expose them to other plugins/queries — see `docs/ROADMAP.md`).
+4. **Folder properties are real data**, usable the way note properties are: an in-memory
+   cache (`FolderPropertiesIndex`) feeds Obsidian's property-name/value/tag suggestions
+   (setting `folderPropertySuggestions`), and a **public, versioned API** (`plugin.api`,
+   `docs/API.md`) lets other plugins read/write properties, use templates and get change events.
+   Later: Iconic rules, Dataview — see `docs/ROADMAP.md`.
 
 If a task doesn't serve one of these, it's out of scope — ask before doing it.
 
@@ -71,7 +74,8 @@ templates use Templater syntax. Seeded `.osf/` data: root (`Vault note`), `Folde
 Subfolder A's page shows own + two inherited groups; its `Meeting` overrides Folder 1's. `Sample notes/` holds two notes
 with tags and typed properties (date, number, checkbox) so property autofill has data, plus
 `Folder links demo.md` (every link form), a note `Folder 2.md` that clashes with folder `Folder 2`,
-and `Rename test.md` + folder `Rename me/Child` for testing link updates on folder rename. `Folder 2` is deliberately bare
+`Folder 1/Subfolder A` has folder-only property `osf-client` and tags `osf-folder-only`, `area/osf`
+(used by no note) for testing suggestions. And `Rename test.md` + folder `Rename me/Child` for testing link updates on folder rename. `Folder 2` is deliberately bare
 to test lazy `.osf/` creation.
 
 There is no headless Obsidian. Logic you can't unit-test must be verified by a human in
@@ -85,6 +89,7 @@ src/core/          PURE. No `obsidian` import, ever. Paths, YAML, template vars,
 src/services/      IO through injected interfaces (OsfFileSystem, YamlCodec). No `obsidian` import.
    ↑
 src/integrations/  Obsidian-facing, non-UI: note creation, other plugins (Templater).
+src/api/           PUBLIC API for other plugins. Facade only; types.ts is the contract.
 src/ui/, src/main.ts, src/settings.ts   Obsidian-facing. Thin. Wiring and rendering only.
 ```
 
@@ -107,6 +112,9 @@ If you need an Obsidian capability in a service, add a method to an interface in
 | `src/integrations/folder-links.ts` | Patches `isUnresolved`, `getLinkSuggestions`, `WorkspaceLeaf.openLinkText`. **Read its header.** |
 | `src/integrations/graph-folders.ts` | Wraps graph `renderer.setData`; injects the "Folders" filter toggle. **Read its header.** |
 | `src/integrations/folder-rename.ts` | Rewrites folder links on folder rename/move (body, embeds, frontmatter). |
+| `src/core/folder-properties.ts` | Folder properties → suggestion data (names/types, values, tag counts) + merge helpers. Pure. |
+| `src/services/folder-properties-index.ts` | In-memory cache of every folder's properties; backs suggestions + `getFolderFrontmatter`. |
+| `src/integrations/folder-property-suggestions.ts` | Patches `getAllProperties`, `getFrontmatterPropertyValuesForKey`, `getTags`. **Read its header.** |
 | `src/ui/folder-hover.ts` | Folder link hover preview content. |
 | `src/integrations/patch.ts` | `patchMethod` — the only way to patch Obsidian internals here (auto-restored on unload). |
 | `src/integrations/vault-fs.ts` | `OsfFileSystem` over `app.vault.adapter`; `trash` = OS trash, else vault `.trash/`. |
@@ -115,6 +123,8 @@ If you need an Obsidian capability in a service, add a method to an interface in
 | `src/ui/template-picker-modal.ts` | Command-palette fuzzy picker of a folder's templates. |
 | `src/ui/folder-page-view.ts` | The folder page (`ItemView`, state `{ path }`). |
 | `src/ui/explorer-integration.ts` | File Explorer folder-click hook (DOM-based, see below). |
+| `src/api/types.ts` | **Public API contract** (copyable by other devs). See `docs/API.md`. |
+| `src/api/smart-folders-api.ts` | API facade over store/index/links: validates input, returns copies. |
 | `src/main.ts` | Plugin entry: registers view, click hook, context menu, command, settings. |
 | `tests/fakes/memory-fs.ts` | In-memory `OsfFileSystem` for service tests. |
 
@@ -169,3 +179,6 @@ If you need an Obsidian capability in a service, add a method to an interface in
   what the module is for. Match the existing files.
 - Don't add runtime dependencies without asking; the bundle should stay tiny.
 - Don't edit `main.js` (generated) or commit it.
+- **The public API is a contract.** Changes to `src/api/types.ts` must be additive; anything
+  breaking needs the owner's OK and bumps `SMART_FOLDERS_API_VERSION`. Update `docs/API.md` and
+  `tests/api/` in the same change. Never return internal objects from the API — copies only.

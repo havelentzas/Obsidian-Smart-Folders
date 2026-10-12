@@ -11,11 +11,25 @@ import { removeShadowedTemplates } from "../core/templates";
 import { ancestorsOf, basename, frontmatterPathFor, normalizeFolderPath, osfDirFor, templatesDirFor } from "../core/paths";
 import type { FolderFrontmatter, FolderTemplate, OsfFileSystem, TemplateGroup, YamlCodec } from "../core/types";
 
+export type FrontmatterChangeListener = (folderPath: string, frontmatter: FolderFrontmatter | null) => void;
+
 export class OsfStore {
+	private readonly listeners: FrontmatterChangeListener[] = [];
+
 	constructor(
 		private readonly fs: OsfFileSystem,
 		private readonly yaml: YamlCodec,
 	) {}
+
+	/** Called after this store writes a folder's properties (or null after removing its .osf/). */
+	onFrontmatterChange(listener: FrontmatterChangeListener): void {
+		this.listeners.push(listener);
+	}
+
+	private emit(folderPath: string, frontmatter: FolderFrontmatter | null): void {
+		const path = normalizeFolderPath(folderPath);
+		for (const listener of this.listeners) listener(path, frontmatter);
+	}
 
 	async hasOsf(folderPath: string): Promise<boolean> {
 		return this.fs.exists(osfDirFor(folderPath));
@@ -43,13 +57,15 @@ export class OsfStore {
 	async writeFrontmatter(folderPath: string, frontmatter: FolderFrontmatter): Promise<void> {
 		await this.ensureOsf(folderPath);
 		await this.fs.write(frontmatterPathFor(folderPath), serializeFrontmatter(frontmatter, this.yaml));
+		this.emit(folderPath, frontmatter);
 	}
 
 	/** Validate then write raw YAML text. Throws FrontmatterParseError without writing if invalid. */
 	async writeFrontmatterText(folderPath: string, text: string): Promise<void> {
-		parseFrontmatter(text, this.yaml);
+		const parsed = parseFrontmatter(text, this.yaml);
 		await this.ensureOsf(folderPath);
 		await this.fs.write(frontmatterPathFor(folderPath), text);
+		this.emit(folderPath, parsed);
 	}
 
 	/** Create .osf/templates/ if missing (explicit user action only). Returns its vault path. */
@@ -112,6 +128,7 @@ export class OsfStore {
 			try {
 				await this.fs.trash(osfDirFor(path));
 				removed.push(path);
+				this.emit(path, null);
 			} catch {
 				failed.push(path);
 			}

@@ -3,16 +3,20 @@
  * events, settings). Logic belongs in src/core (pure) or src/services (IO).
  */
 
-import { Notice, Plugin, TFolder, WorkspaceLeaf, parseYaml, stringifyYaml } from "obsidian";
+import { Notice, Plugin, TFolder, WorkspaceLeaf, parseLinktext, parseYaml, stringifyYaml } from "obsidian";
+import { createSmartFoldersApi } from "./api/smart-folders-api";
+import type { SmartFoldersApi } from "./api/types";
 import { VIEW_TYPE_FOLDER_PAGE } from "./constants";
 import { normalizeFolderPath } from "./core/paths";
 import type { FolderTemplate, YamlCodec } from "./core/types";
 import { FolderLinks } from "./integrations/folder-links";
+import { installFolderPropertySuggestions } from "./integrations/folder-property-suggestions";
 import { FolderRenameLinkUpdater } from "./integrations/folder-rename";
 import { GraphFolders } from "./integrations/graph-folders";
 import { NoteCreator } from "./integrations/note-creator";
 import { openInSystemExplorer } from "./integrations/system-explorer";
 import { vaultFs } from "./integrations/vault-fs";
+import { FolderPropertiesIndex } from "./services/folder-properties-index";
 import { OsfStore } from "./services/osf-store";
 import { DEFAULT_SETTINGS, SmartFoldersSettingTab, type SmartFoldersSettings } from "./settings";
 import { registerFolderClickHandler } from "./ui/explorer-integration";
@@ -24,6 +28,10 @@ import { TemplatePickerModal } from "./ui/template-picker-modal";
 export default class SmartFoldersPlugin extends Plugin {
 	settings: SmartFoldersSettings = DEFAULT_SETTINGS;
 	store!: OsfStore;
+	/** Every folder's properties in memory (see getFolderFrontmatter). */
+	folderProperties!: FolderPropertiesIndex;
+	/** Public API for other plugins — see src/api/types.ts and docs/API.md. */
+	api!: SmartFoldersApi;
 	noteCreator!: NoteCreator;
 	folderLinks!: FolderLinks;
 	graphFolders!: GraphFolders;
@@ -34,6 +42,7 @@ export default class SmartFoldersPlugin extends Plugin {
 		const yaml: YamlCodec = { parse: parseYaml, stringify: stringifyYaml };
 		this.store = new OsfStore(vaultFs(this.app.vault.adapter), yaml);
 		this.noteCreator = new NoteCreator(this.app, this.store);
+		this.installFolderPropertiesIndex();
 
 		this.registerView(
 			VIEW_TYPE_FOLDER_PAGE,
@@ -83,7 +92,60 @@ export default class SmartFoldersPlugin extends Plugin {
 		});
 
 		this.installFolderLinks();
+		this.installApi();
 		this.addSettingTab(new SmartFoldersSettingTab(this.app, this));
+	}
+
+	/**
+	 * Folder properties cache + folder properties in Obsidian's suggestions. The cache rebuilds on
+	 * startup and when the window regains focus (.osf/ edits outside Obsidian fire no events).
+	 */
+	private installFolderPropertiesIndex(): void {
+		this.folderProperties = new FolderPropertiesIndex(this.store);
+		const allFolders = () =>
+			this.app.vault
+				.getAllLoadedFiles()
+				.filter((f): f is TFolder => f instanceof TFolder)
+				.map((f) => f.path);
+		this.app.workspace.onLayoutReady(() => void this.folderProperties.rebuild(allFolders()));
+		this.registerDomEvent(window, "focus", () => void this.folderProperties.rebuild(allFolders()));
+		this.registerEvent(
+			this.app.vault.on("rename", (file, oldPath) => {
+				if (file instanceof TFolder) this.folderProperties.rename(oldPath, file.path);
+			}),
+		);
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				if (file instanceof TFolder) this.folderProperties.delete(file.path);
+			}),
+		);
+		installFolderPropertySuggestions({
+			app: this.app,
+			index: this.folderProperties,
+			isEnabled: () => this.settings.folderPropertySuggestions,
+			register: (cb) => this.register(cb),
+		});
+	}
+
+	/** Public API object + its workspace events (`smart-folders:ready`, `smart-folders:properties-changed`). */
+	private installApi(): void {
+		this.api = createSmartFoldersApi({
+			app: this.app,
+			pluginVersion: this.manifest.version,
+			store: this.store,
+			index: this.folderProperties,
+			createNote: (template, folderPath) => this.noteCreator.createFromTemplate(template, folderPath),
+			resolveFolderLink: (linktext, sourcePath) =>
+				this.folderLinks.folderForLink(parseLinktext(linktext).path, sourcePath),
+			openFolderPage: (path) => this.openFolderPage(path),
+		});
+		const { workspace } = this.app;
+		this.register(
+			this.folderProperties.onChange((path, fm) =>
+				workspace.trigger("smart-folders:properties-changed", path, fm === null ? null : structuredClone(fm)),
+			),
+		);
+		void this.folderProperties.whenReady().then(() => workspace.trigger("smart-folders:ready"));
 	}
 
 	/** [[Folder]] links + graph folder nodes. Both are no-ops while the setting is off. */
@@ -93,6 +155,12 @@ export default class SmartFoldersPlugin extends Plugin {
 			app: this.app,
 			isEnabled,
 			openFolderFromLink: async (folderPath, leaf) => {
+				const existing = this.findOpenFolderPage(folderPath);
+				if (existing) {
+					// Ctrl/Cmd-click made a fresh empty tab for the link; don't leave it behind.
+					if (existing !== leaf && leaf.view.getViewType() === "empty") leaf.detach();
+					return this.focusLeaf(existing);
+				}
 				if (this.settings.openInRightSidebar) return this.openFolderPage(folderPath);
 				const state: FolderPageState = { path: folderPath };
 				await leaf.setViewState({ type: VIEW_TYPE_FOLDER_PAGE, state, active: true });
@@ -133,15 +201,38 @@ export default class SmartFoldersPlugin extends Plugin {
 	}
 
 	/**
-	 * Open a folder page. Main area: replaces the current tab. Right sidebar: reuses an
-	 * existing sidebar folder page if there is one, else creates a sidebar tab.
+	 * Open a folder page. If that folder's page is already open anywhere, focus it instead
+	 * (setting `focusExistingPage`). Otherwise main area: replaces the current tab; right
+	 * sidebar: reuses an existing sidebar folder page if there is one, else creates a sidebar tab.
 	 */
 	async openFolderPage(folderPath: string): Promise<void> {
 		const state: FolderPageState = { path: normalizeFolderPath(folderPath) };
+		const existing = this.findOpenFolderPage(state.path);
+		if (existing) return this.focusLeaf(existing);
 		const leaf = this.settings.openInRightSidebar ? this.getRightSidebarLeaf() : this.app.workspace.getLeaf(false);
 		if (!leaf) return;
 		await leaf.setViewState({ type: VIEW_TYPE_FOLDER_PAGE, state, active: true });
 		await this.app.workspace.revealLeaf(leaf);
+	}
+
+	/**
+	 * A tab already showing this folder's page, or null (also null when `focusExistingPage` is off).
+	 * Reads view state rather than the view so deferred (not yet loaded) tabs count too.
+	 */
+	private findOpenFolderPage(folderPath: string): WorkspaceLeaf | null {
+		if (!this.settings.focusExistingPage) return null;
+		const path = normalizeFolderPath(folderPath);
+		return (
+			this.app.workspace.getLeavesOfType(VIEW_TYPE_FOLDER_PAGE).find((leaf) => {
+				const state = leaf.getViewState().state as Partial<FolderPageState> | undefined;
+				return typeof state?.path === "string" && normalizeFolderPath(state.path) === path;
+			}) ?? null
+		);
+	}
+
+	private async focusLeaf(leaf: WorkspaceLeaf): Promise<void> {
+		await this.app.workspace.revealLeaf(leaf);
+		this.app.workspace.setActiveLeaf(leaf, { focus: true });
 	}
 
 	private getRightSidebarLeaf(): WorkspaceLeaf | null {
