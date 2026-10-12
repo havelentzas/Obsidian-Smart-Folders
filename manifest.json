@@ -1,0 +1,9 @@
+{
+  "id": "smart-folders",
+  "name": "Smart Folders",
+  "version": "0.1.0",
+  "minAppVersion": "1.14.4",
+  "description": "Give folders their own properties and templates, stored in a hidden .osf folder, with a folder page to edit them.",
+  "author": "Harry Velentzas",
+  "isDesktopOnly": false
+}

@@ -1,0 +1,558 @@
+/*
+ * Smart Folders — folder page.
+ * Obsidian CSS variables only, so every theme (light/dark, custom accent) works.
+ * Everything is scoped under .smart-folders-page.
+ */
+
+.smart-folders-page {
+	--sf-radius: var(--radius-l);
+	--sf-accent-soft: hsla(var(--interactive-accent-hsl), 0.12);
+	--sf-accent-softer: hsla(var(--interactive-accent-hsl), 0.06);
+	padding: var(--size-4-6) var(--size-4-8) var(--size-4-12);
+	max-width: calc(var(--file-line-width) + 4rem);
+	margin: 0 auto;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.smart-folders-page .smart-folders-header {
+	position: relative;
+	margin-bottom: var(--size-4-6);
+	padding: var(--size-4-5) var(--size-4-6);
+	border-radius: var(--sf-radius);
+	background:
+		radial-gradient(120% 140% at 0% 0%, var(--sf-accent-soft), transparent 60%),
+		var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	overflow: hidden;
+}
+
+.smart-folders-page .smart-folders-breadcrumbs {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	margin-bottom: var(--size-4-2);
+}
+
+.smart-folders-page .smart-folders-breadcrumbs a {
+	color: var(--text-muted);
+	text-decoration: none;
+}
+
+.smart-folders-page .smart-folders-breadcrumbs a:hover {
+	color: var(--text-accent);
+}
+
+.smart-folders-page .smart-folders-breadcrumb-sep {
+	opacity: 0.5;
+}
+
+.smart-folders-page .smart-folders-title-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3);
+}
+
+.smart-folders-page .smart-folders-title-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.5rem;
+	height: 2.5rem;
+	flex-shrink: 0;
+	border-radius: var(--radius-m);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	box-shadow: 0 4px 14px hsla(var(--interactive-accent-hsl), 0.35);
+}
+
+.smart-folders-page .smart-folders-title-icon svg {
+	width: 1.35rem;
+	height: 1.35rem;
+}
+
+.smart-folders-page .smart-folders-title {
+	margin: 0;
+	font-size: 1.75em;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+	word-break: break-word;
+}
+
+/* ── Cards ──────────────────────────────────────────────── */
+
+.smart-folders-page .smart-folders-card {
+	margin-bottom: var(--size-4-4);
+	padding: var(--size-4-4) var(--size-4-5);
+	border-radius: var(--sf-radius);
+	background: var(--background-primary-alt);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.smart-folders-page .smart-folders-card-header {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-3);
+}
+
+.smart-folders-page .smart-folders-card-icon {
+	display: flex;
+	color: var(--text-accent);
+}
+
+.smart-folders-page .smart-folders-card-icon svg {
+	width: var(--icon-s);
+	height: var(--icon-s);
+}
+
+.smart-folders-page .smart-folders-card-title {
+	margin: 0;
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--text-muted);
+}
+
+.smart-folders-page .smart-folders-badge {
+	padding: 0 var(--size-4-2);
+	border-radius: var(--radius-xl, 999px);
+	background: var(--sf-accent-soft);
+	color: var(--text-accent);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	line-height: 1.6;
+}
+
+.smart-folders-page .smart-folders-add-btn {
+	margin-left: auto;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-m);
+}
+
+.smart-folders-page .smart-folders-add-btn svg {
+	width: var(--icon-s);
+	height: var(--icon-s);
+}
+
+.smart-folders-page .smart-folders-card-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--size-4-3);
+	margin-top: var(--size-4-2);
+}
+
+.smart-folders-page .smart-folders-muted {
+	color: var(--text-faint);
+	font-size: var(--font-ui-small);
+}
+
+/* ── Properties editor ──────────────────────────────────── */
+
+.smart-folders-page .smart-folders-yaml {
+	display: block;
+	width: 100%;
+	min-height: 9em;
+	resize: vertical;
+	padding: var(--size-4-3);
+	border-radius: var(--radius-m);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small);
+	line-height: 1.6;
+	transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.smart-folders-page .smart-folders-yaml:focus {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 3px var(--sf-accent-soft);
+}
+
+.smart-folders-page .smart-folders-error {
+	flex: 1;
+	color: var(--text-error);
+	font-size: var(--font-ui-small);
+}
+
+/* Native properties editor: Obsidian's own .metadata-container, untouched except spacing. */
+.smart-folders-page .smart-folders-properties-card {
+	padding-top: var(--size-4-2);
+	padding-bottom: var(--size-4-2);
+}
+
+.smart-folders-page .smart-folders-properties-card .metadata-container {
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: transparent;
+}
+
+.smart-folders-page .smart-folders-notice {
+	margin-bottom: var(--size-4-2);
+	padding: var(--size-4-2) var(--size-4-3);
+	border-radius: var(--radius-m);
+	background: rgba(var(--color-orange-rgb), 0.1);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+/* ── Tiles (subfolders, templates) ──────────────────────── */
+
+.smart-folders-page .smart-folders-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: var(--size-4-2);
+}
+
+.smart-folders-page .smart-folders-tile {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	height: auto;
+	min-height: 2.5rem;
+	padding: var(--size-4-2) var(--size-4-3);
+	border-radius: var(--radius-m);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	box-shadow: none;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	text-align: left;
+	cursor: pointer;
+	transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.smart-folders-page .smart-folders-tile:hover {
+	border-color: var(--interactive-accent);
+	background: var(--sf-accent-softer);
+	transform: translateY(-1px);
+}
+
+.smart-folders-page .smart-folders-tile:focus-visible {
+	box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+.smart-folders-page .smart-folders-tile-icon {
+	display: flex;
+	flex-shrink: 0;
+	color: var(--text-accent);
+}
+
+.smart-folders-page .smart-folders-tile-icon svg {
+	width: var(--icon-s);
+	height: var(--icon-s);
+}
+
+.smart-folders-page .smart-folders-tile-label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.smart-folders-page .smart-folders-tile-hint {
+	flex-shrink: 0;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-accent);
+	opacity: 0;
+	transition: opacity 120ms ease;
+}
+
+.smart-folders-page .smart-folders-tile:hover .smart-folders-tile-hint,
+.smart-folders-page .smart-folders-tile:focus-visible .smart-folders-tile-hint {
+	opacity: 1;
+}
+
+/* ── Templates: empty-state call to action ─────────────── */
+
+.smart-folders-page .smart-folders-empty-cta {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-2);
+	width: 100%;
+	height: auto;
+	padding: var(--size-4-8) var(--size-4-6);
+	border-radius: var(--sf-radius);
+	border: 2px dashed hsla(var(--interactive-accent-hsl), 0.45);
+	background: var(--sf-accent-softer);
+	box-shadow: none;
+	color: var(--text-normal);
+	white-space: normal;
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.smart-folders-page .smart-folders-empty-cta:hover {
+	border-color: var(--interactive-accent);
+	background: var(--sf-accent-soft);
+}
+
+.smart-folders-page .smart-folders-empty-cta-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 3rem;
+	height: 3rem;
+	border-radius: 50%;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	box-shadow: 0 6px 18px hsla(var(--interactive-accent-hsl), 0.35);
+	transition: transform 150ms ease;
+}
+
+.smart-folders-page .smart-folders-empty-cta:hover .smart-folders-empty-cta-icon {
+	transform: scale(1.08) rotate(90deg);
+}
+
+.smart-folders-page .smart-folders-empty-cta-icon svg {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+
+.smart-folders-page .smart-folders-empty-cta-title {
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+}
+
+.smart-folders-page .smart-folders-empty-cta-hint {
+	max-width: 34ch;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	text-align: center;
+}
+
+/* ── Templates: inherited groups ───────────────────────── */
+
+.smart-folders-page .smart-folders-subheader {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	margin: var(--size-4-5) 0 var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--text-faint);
+}
+
+.smart-folders-page .smart-folders-subheader::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--background-modifier-border);
+}
+
+.smart-folders-page .smart-folders-group {
+	margin-bottom: var(--size-4-3);
+	padding-left: var(--size-4-3);
+	border-left: 2px solid var(--sf-accent-soft);
+}
+
+.smart-folders-page .smart-folders-group-heading {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	margin-bottom: var(--size-4-2);
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	text-decoration: none;
+}
+
+.smart-folders-page .smart-folders-group-heading:hover {
+	color: var(--text-accent);
+}
+
+.smart-folders-page .smart-folders-group-icon {
+	display: flex;
+}
+
+.smart-folders-page .smart-folders-group-icon svg {
+	width: var(--icon-xs);
+	height: var(--icon-xs);
+}
+
+/* Inherited template tiles are quieter than the folder's own. */
+.smart-folders-page .smart-folders-group .smart-folders-tile {
+	background: transparent;
+}
+
+/* ── Narrow (right sidebar) ─────────────────────────────── */
+
+.workspace-split.mod-right-split .smart-folders-page {
+	padding: var(--size-4-3);
+}
+
+.workspace-split.mod-right-split .smart-folders-page .smart-folders-grid {
+	grid-template-columns: 1fr;
+}
+
+/* ── Command-palette picker ─────────────────────────────── */
+
+.smart-folders-suggestion-source {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* ── Graph view ─────────────────────────────────────────── */
+
+/* Folder node color in the graph. Override in a CSS snippet to customise. */
+body {
+	--smart-folders-graph-folder: var(--color-yellow);
+}
+
+.smart-folders-graph-folder-color {
+	position: absolute;
+	visibility: hidden;
+	color: var(--smart-folders-graph-folder);
+}
+
+/* ── Folder link hover preview ─────────────────────────── */
+
+.smart-folders-hover {
+	padding: var(--size-4-3) var(--size-4-4);
+	min-width: 260px;
+	max-width: 400px;
+	font-size: var(--font-ui-small);
+}
+
+.smart-folders-hover-header {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-2);
+}
+
+.smart-folders-hover-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.9rem;
+	height: 1.9rem;
+	flex-shrink: 0;
+	border-radius: var(--radius-m);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.smart-folders-hover-icon svg {
+	width: var(--icon-s);
+	height: var(--icon-s);
+}
+
+.smart-folders-hover-title {
+	display: block;
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	color: var(--text-normal);
+	text-decoration: none;
+}
+
+.smart-folders-hover-title:hover {
+	color: var(--text-accent);
+}
+
+.smart-folders-hover-path,
+.smart-folders-hover-muted {
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.smart-folders-hover-props {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: var(--size-2-2) var(--size-4-3);
+	margin: var(--size-4-2) 0;
+	padding: var(--size-4-2) 0;
+	border-top: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.smart-folders-hover-prop {
+	display: contents;
+}
+
+.smart-folders-hover-prop-key {
+	color: var(--text-muted);
+}
+
+.smart-folders-hover-prop-value {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-2-2);
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.smart-folders-hover-pill {
+	padding: 0 var(--size-4-2);
+	border-radius: var(--radius-xl, 999px);
+	background: hsla(var(--interactive-accent-hsl), 0.12);
+	color: var(--text-accent);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.6;
+}
+
+.smart-folders-hover-chips {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-3);
+	margin: var(--size-4-2) 0;
+}
+
+.smart-folders-hover-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	padding: var(--size-2-1) var(--size-4-2);
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+	text-decoration: none;
+	font-size: var(--font-ui-smaller);
+}
+
+.smart-folders-hover-chip:hover {
+	border-color: var(--interactive-accent);
+	color: var(--text-accent);
+}
+
+.smart-folders-hover-chip svg {
+	width: var(--icon-xs);
+	height: var(--icon-xs);
+	color: var(--text-accent);
+}
+
+.smart-folders-hover-footer {
+	margin-top: var(--size-4-2);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+/* [[ suggester: tint the folder flair so folders stand out from notes. */
+.smart-folders-folder-suggestion .suggestion-flair {
+	color: var(--text-accent);
+}
+
+/* "Remove all Smart Folders data" confirmation */
+.smart-folders-remove-list {
+	max-height: 12em;
+	overflow-y: auto;
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+}
